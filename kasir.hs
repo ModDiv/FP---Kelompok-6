@@ -27,34 +27,29 @@ applyDiscount item =
   in priceAfterDiscount * (1 + itemTax item / 100)
 
 -- Menambah barang ke inventory
-addItem :: Inventory -> IO Inventory
-addItem inv = do
+addItem :: Inventory -> Int -> IO (Inventory, Int)
+addItem inv lastId = do
   putStrLn "=== Tambah Barang ==="
-  putStr "ID Barang: "
+  let newId = lastId + 1
+  putStrLn $ "ID Barang (otomatis): " ++ show newId
+  putStr "Nama Barang: "
   hFlush stdout
-  id <- readLn
-  if isNothing (findItemById id inv)
-    then do
-      putStr "Nama Barang: "
-      hFlush stdout
-      name <- getLine
-      putStr "Jumlah Barang: "
-      hFlush stdout
-      stock <- readLn
-      putStr "Harga Barang: "
-      hFlush stdout
-      price <- readLn
-      putStr "Kategori Barang: "
-      hFlush stdout
-      category <- getLine
-      putStr "Pajak Barang (dalam %): "
-      hFlush stdout
-      tax <- readLn
-      let newItem = Item id name stock price category tax 0
-      return (inv ++ [newItem])
-    else do
-      putStrLn "Barang dengan ID tersebut sudah ada!"
-      return inv
+  name <- getLine
+  putStr "Jumlah Barang: "
+  hFlush stdout
+  stock <- readLn
+  putStr "Harga Barang: "
+  hFlush stdout
+  price <- readLn
+  putStr "Kategori Barang: "
+  hFlush stdout
+  category <- getLine
+  putStr "Pajak Barang (dalam %): "
+  hFlush stdout
+  tax <- readLn
+  let newItem = Item newId name stock price category tax 0
+  putStrLn "Barang berhasil ditambahkan!"
+  return (inv ++ [newItem], newId)
 
 -- Melihat data barang
 viewItems :: Inventory -> IO ()
@@ -171,10 +166,10 @@ checkoutCart cart = do
 
 -- Program Utama
 main :: IO ()
-main = mainMenu [] [] []
+main = mainMenu [] [] [] 0
 
-mainMenu :: Inventory -> Cart -> [Transaction] -> IO ()
-mainMenu inv cart history = do
+mainMenu :: Inventory -> Cart -> [Transaction] -> Int -> IO ()
+mainMenu inv cart history lastId = do
   putStrLn "\n=== Program Kasir ==="
   putStrLn "1. Tambah Barang"
   putStrLn "2. Lihat Data Barang"
@@ -189,24 +184,24 @@ mainMenu inv cart history = do
   hFlush stdout
   choice <- readLn
   case choice of
-    1 -> do newInv <- addItem inv
-            mainMenu newInv cart history
+    1 -> do (newInv, newLastId) <- addItem inv lastId
+            mainMenu newInv cart history newLastId
     2 -> do viewItems inv
-            mainMenu inv cart history
+            mainMenu inv cart history lastId
     3 -> do newInv <- applyItemDiscount inv
-            mainMenu newInv cart history
+            mainMenu newInv cart history lastId
     4 -> do newInv <- removeItemDiscount inv
-            mainMenu newInv cart history
+            mainMenu newInv cart history lastId
     5 -> do newInv <- editOrRemoveItem inv
-            mainMenu newInv cart history
+            mainMenu newInv cart history lastId
     6 -> do (newInv, newCart) <- addToCart inv cart
-            mainMenu newInv newCart history
+            mainMenu newInv newCart history lastId
     7 -> do total <- checkoutCart cart
             let newHistory = history ++ [map (\(item, qty) -> (item, qty, applyDiscount item * fromIntegral qty)) cart]
-            mainMenu inv [] newHistory
+            mainMenu inv [] newHistory lastId
     8 -> do putStrLn "\n=== Riwayat Transaksi ==="
             mapM_ print history
-            mainMenu inv cart history
+            mainMenu inv cart history lastId
     9 -> putStrLn "Terima kasih telah menggunakan program kasir!"
     _ -> do putStrLn "Pilihan tidak valid, coba lagi."
-            mainMenu inv cart history
+            mainMenu inv cart history lastId
