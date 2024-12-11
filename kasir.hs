@@ -1,6 +1,7 @@
 import Data.List (find)
 import Data.Maybe (isNothing, fromJust)
 import System.IO (hFlush, stdout)
+import Control.Exception (try)
 
 -- Data Type Definitions
 data Item = Item
@@ -19,7 +20,7 @@ type Transaction = [(Item, Int, Double)] -- (Item, Quantity, Total Price)
 
 -- Helper Functions
 findItemById :: Int -> Inventory -> Maybe Item
-findItemById id inv = find (\item -> itemId item == id) inv
+findItemById id = find (\item -> itemId item == id)
 
 applyDiscount :: Item -> Double
 applyDiscount item =
